@@ -1,10 +1,6 @@
 import PySimpleGUI as sg
 from typing import List, Tuple
-import colour
-
-size = (500, 300)
-
-sg.theme('DarkAmber')   
+import colour 
 
 
 class Track:
@@ -86,11 +82,12 @@ def addTrack(window: sg.Window, track: sg.Element):
     """
     window.extend_layout(window['tracks'], track)
 
-def newTrack(trackIndex: int, base: bool=False, res: int=None) -> Tuple[Track, List[sg.Element]]:
+def newTrack(trackIndex: int, winSize: Tuple[int, int], base: bool=False, res: int=None) -> Tuple[Track, List[sg.Element]]:
     """Generates a new track as well as its slider and graph
 
     Args:
         trackIndex (int): The index of this new track in the layout, i.e. #tracks.
+        winSize (Tuple[int, int]): The (width, height) of the window.
         base (bool, optional): Is this new track the first one. Defaults to False.
         res (int, optional): Only call when base=True, the number of cells in the track. Defaults to None.
 
@@ -99,51 +96,58 @@ def newTrack(trackIndex: int, base: bool=False, res: int=None) -> Tuple[Track, L
     """
     assert not (base and res is None)
     
-    graph = sg.Graph((int(size[0]*0.8), 50), graph_bottom_left=(0, 0), graph_top_right=(1, 1), float_values=True, background_color="white")
-    slider = sg.Slider((1, 100), key=f"slider{trackIndex}", size=(int(size[0]*0.8), 10), default_value=4, orientation='h', enable_events=True)
+    graph = sg.Graph((int(winSize[0]*0.8), 50), graph_bottom_left=(0, 0), graph_top_right=(1, 1), float_values=True, background_color="white")
+    slider = sg.Slider((1, 100), key=f"slider{trackIndex}", size=(int(winSize[0]*0.8), 10), default_value=4, orientation='h', enable_events=True)
     t = Track.BaseTrack(graph, res) if base else Track(graph)
     return t, [[t.graph], [slider]]
 
 
-# Initializing
-baseRes = 4
-baseTrack, baseElements = newTrack(0, base=True, res=baseRes)
-tracks = [baseTrack]
-layout = [  
-    [sg.Column(baseElements, key='tracks')],
-    [sg.Button('Nouvelle piste', key='addTrack')]
-]
-
-# Creating the Window
-window = sg.Window('Musique déformée', layout, size=size, resizable=True)
-window.Finalize()
-baseTrack.updateGraph()
-
-while True:
-    event, values = window.read()
-    if event == sg.WIN_CLOSED: # if user closes window or clicks cancel
-        break
+def main():
+    size = (500, 300)
+    sg.theme('DarkAmber') 
     
-    if event.startswith('slider'):  # if a slider has been moved
-        sliderIndex = int(event.replace('slider', ''))  # slider ids : "slider{index}""
-        newRes = int(values[event]) # gets the new resolution from the slider
-        track = tracks[sliderIndex]
-        if sliderIndex > 0: # if not the base track
-            track.computeElements(tracks[sliderIndex-1].values, newRes)
-        else:
-            track.computeElements(None, newRes)
-        track.updateGraph()
+    # Initializing
+    baseRes = 4
+    baseTrack, baseElements = newTrack(0, winSize=size, base=True, res=baseRes)
+    tracks = [baseTrack]
+    layout = [  
+        [sg.Column(baseElements, key='tracks')],
+        [sg.Button('Nouvelle piste', key='addTrack')]
+    ]
 
-        for i, t in enumerate(tracks[sliderIndex+1:]):
-            # updates every track that comes after to inherit the changes, i.e. recomputing cells
-            i += sliderIndex + 1    
-            t.computeElements(tracks[i-1].values, t.res)
-            t.updateGraph()
-    
-    elif event == 'addTrack':
-        track, elements = newTrack(len(tracks))
-        tracks.append(track)
-        addTrack(window, elements)
-        track.updateGraph()
-    
-window.close()
+    # Creating the Window
+    window = sg.Window('Musique déformée', layout, size=size, resizable=True)
+    window.Finalize()
+    baseTrack.updateGraph()
+
+    while True:
+        event, values = window.read()
+        if event == sg.WIN_CLOSED: # if user closes window or clicks cancel
+            break
+        
+        if event.startswith('slider'):  # if a slider has been moved
+            sliderIndex = int(event.replace('slider', ''))  # slider ids : "slider{index}""
+            newRes = int(values[event]) # gets the new resolution from the slider
+            track = tracks[sliderIndex]
+            if sliderIndex > 0: # if not the base track
+                track.computeElements(tracks[sliderIndex-1].values, newRes)
+            else:
+                track.computeElements(None, newRes)
+            track.updateGraph()
+
+            for i, t in enumerate(tracks[sliderIndex+1:]):
+                # updates every track that comes after to inherit the changes, i.e. recomputing cells
+                i += sliderIndex + 1    
+                t.computeElements(tracks[i-1].values, t.res)
+                t.updateGraph()
+        
+        elif event == 'addTrack':
+            track, elements = newTrack(len(tracks), winSize=size)
+            tracks.append(track)
+            addTrack(window, elements)
+            track.updateGraph()
+        
+    window.close()
+
+
+if __name__ == '__main__' : main()
