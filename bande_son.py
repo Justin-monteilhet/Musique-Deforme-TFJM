@@ -111,7 +111,7 @@ def main():
     baseTrack, baseElements = newTrack(0, winSize=size, base=True, res=baseRes)
     tracks = [baseTrack]
     layout = [  
-        [sg.Column(baseElements, key='tracks')],
+        [sg.Column(baseElements, key='tracks', scrollable=True, vertical_scroll_only=True, expand_y=True)],
         [sg.Button('Nouvelle piste', key='addTrack')]
     ]
 
