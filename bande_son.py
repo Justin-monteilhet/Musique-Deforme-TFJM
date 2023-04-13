@@ -81,6 +81,7 @@ def addTrack(window: sg.Window, track: sg.Element):
         track (sg.Element): The full track layout (sg.Graph and sg.Slider)
     """
     window.extend_layout(window['tracks'], track)
+    window['tracks'].contents_changed()
 
 def newTrack(trackIndex: int, winSize: Tuple[int, int], base: bool=False, res: int=None) -> Tuple[Track, List[sg.Element]]:
     """Generates a new track as well as its slider and graph
@@ -97,13 +98,13 @@ def newTrack(trackIndex: int, winSize: Tuple[int, int], base: bool=False, res: i
     assert not (base and res is None)
     
     graph = sg.Graph((int(winSize[0]*0.8), 50), graph_bottom_left=(0, 0), graph_top_right=(1, 1), float_values=True, background_color="white")
-    slider = sg.Slider((1, 100), key=f"slider{trackIndex}", size=(int(winSize[0]*0.8), 10), default_value=4, orientation='h', enable_events=True)
+    slider = sg.Slider((1, 100), key=f"slider{trackIndex}", size=(int(winSize[0]*0.3), 10), default_value=4, orientation='h', enable_events=True)
     t = Track.BaseTrack(graph, res) if base else Track(graph)
-    return t, [[t.graph], [slider]]
+    return t, [[slider], [t.graph]]
 
 
 def main():
-    size = (500, 300)
+    size = (800, 400)
     sg.theme('DarkAmber') 
     
     # Initializing
@@ -143,7 +144,9 @@ def main():
         
         elif event == 'addTrack':
             track, elements = newTrack(len(tracks), winSize=size)
+            track.computeElements(tracks[-1].values, track.res)
             tracks.append(track)
+            
             addTrack(window, elements)
             track.updateGraph()
         
